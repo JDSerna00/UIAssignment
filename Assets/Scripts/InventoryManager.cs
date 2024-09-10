@@ -120,30 +120,31 @@ public class InventoryManager : MonoBehaviour
     {
         existingPanels = itemPanelGrid.GetComponentsInChildren<ItemPanel>().ToList();
 
-        if (existingPanels.Count < inventorySize)
+        // Ensure we have enough panels for the inventory size
+        while (existingPanels.Count < inventorySize)
         {
-            int amountToCreate = inventorySize - existingPanels.Count;  
-            for(int i = 0;i < amountToCreate;i++)
+            GameObject newPanel = Instantiate(itemPanel, itemPanelGrid.transform);
+            ItemPanel itemPanelComponent = newPanel.GetComponent<ItemPanel>();
+            if (itemPanelComponent != null)
             {
-                GameObject newPanel = Instantiate(itemPanel, itemPanelGrid.transform);
-                ItemPanel itemPanelComponent = newPanel.GetComponent<ItemPanel>();
-                if (itemPanelComponent != null)
-                {
-                    existingPanels.Add(itemPanelComponent);
-                }
-                else
-                {
-                    Debug.LogError("ItemPanel component missing on instantiated panel prefab.");
-                }
+                existingPanels.Add(itemPanelComponent);
+            }
+            else
+            {
+                Debug.LogError("ItemPanel component missing on instantiated panel prefab.");
             }
         }
 
+        // Update each panel with the corresponding item slot
         for (int index = 0; index < inventorySize; index++)
         {
             if (index >= items.Count)
             {
-                Debug.LogError("Item index out of bounds at " + index);
-                break;
+                // Deactivate any extra panels if items are fewer than inventorySize
+                existingPanels[index].itemImage.gameObject.SetActive(false);
+                existingPanels[index].stacksText.gameObject.SetActive(false);
+                existingPanels[index].itemSlot = null;
+                continue;
             }
 
             ItemSlot currentItemSlot = items[index];
@@ -155,25 +156,15 @@ public class InventoryManager : MonoBehaviour
                 continue;  // Skip to the next iteration to avoid errors
             }
 
-            // Set the panel's name for debugging purposes
-            string itemName = (index + 1).ToString();
-            if (currentItemSlot.item != null) itemName += ": " + currentItemSlot.item.GiveName();
-            else itemName += ": -";
-
-            currentPanel.name = itemName + " Panel";
-
             // Assign the InventoryManager and ItemSlot to the panel
             currentPanel.inventory = this;
             currentPanel.itemSlot = currentItemSlot;
-
-            Debug.Log("Assigning panel " + index + " with item " + itemName);
 
             // Update the panel UI elements
             if (currentItemSlot.item != null)
             {
                 currentPanel.itemImage.gameObject.SetActive(true);
                 currentPanel.itemImage.sprite = currentItemSlot.item.GiveItemImage();
-                currentPanel.itemImage.CrossFadeAlpha(1, 0.05f, true);
                 currentPanel.stacksText.gameObject.SetActive(true);
                 currentPanel.stacksText.text = currentItemSlot.stack.ToString();
             }
@@ -186,42 +177,24 @@ public class InventoryManager : MonoBehaviour
 
         Debug.Log("Inventory refresh completed.");
         mouse.EmptySlot();
-     
     }
     public void FilterInventory(ItemCategory category)
     {
-        // Filter the items based on the selected category
         List<ItemSlot> filteredItems = GetItemsByCategory(category);
 
-        // Clear the current display
-        foreach (ItemPanel panel in existingPanels)
-        {
-            panel.itemImage.gameObject.SetActive(false);
-            panel.stacksText.gameObject.SetActive(false);
-        }
+        // Create a new list with filtered items at the start
+        List<ItemSlot> reorderedItems = new List<ItemSlot>();
+        reorderedItems.AddRange(filteredItems);
 
-        // Update the display with filtered items
-        for (int index = 0; index < filteredItems.Count; index++)
-        {
-            if (index >= existingPanels.Count)
-            {
-                Debug.LogError("Panel index out of bounds at " + index);
-                break;
-            }
+        // Add the remaining items that are not in the filtered list
+        List<ItemSlot> remainingItems = items.Where(slot => !filteredItems.Contains(slot)).ToList();
+        reorderedItems.AddRange(remainingItems);
 
-            ItemSlot currentItemSlot = filteredItems[index];
-            ItemPanel currentPanel = existingPanels[index];
+        // Update the items list with the reordered items
+        items = reorderedItems;
 
-            if (currentItemSlot.item != null)
-            {
-                currentPanel.itemImage.gameObject.SetActive(true);
-                currentPanel.itemImage.sprite = currentItemSlot.item.GiveItemImage();
-                currentPanel.stacksText.gameObject.SetActive(true);
-                currentPanel.stacksText.text = currentItemSlot.stack.ToString();
-            }
-        }
-
-        Debug.Log($"Inventory filtered by {category}.");
+        // Refresh the inventory UI
+        RefreshInventory();
     }
     public List<ItemSlot> GetItemsByCategory(ItemCategory category)
     {
