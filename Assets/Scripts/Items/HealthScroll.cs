@@ -2,21 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Apple : Items
+public class HealthScroll : Items
 {
-    public Apple() : base(ItemCategory.Consumable) { }
+    public HealthScroll() : base(ItemCategory.Consumable) { }
     public override string GiveName()
     {
-        return "Apple";
+        return "HealthScroll";
     }
 
     public override int MaxStacks()
     {
-        return 5;
+        return 10;
     }
 
     public override Sprite GiveItemImage()
     {
-        return Resources.Load<Sprite>("Item Icons/AppleIcon");
+        return Resources.Load<Sprite>("Item Icons/HealthScrollItem");
     }
 }

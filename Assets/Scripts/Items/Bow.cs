@@ -2,21 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Apple : Items
+public class Bow : Items
 {
-    public Apple() : base(ItemCategory.Consumable) { }
+    public Bow() : base(ItemCategory.Equippable) { }
     public override string GiveName()
     {
-        return "Apple";
+        return "Bow";
     }
 
     public override int MaxStacks()
     {
-        return 5;
+        return 1;
     }
 
     public override Sprite GiveItemImage()
     {
-        return Resources.Load<Sprite>("Item Icons/AppleIcon");
+        return Resources.Load<Sprite>("Item Icons/BowIcon");
     }
 }

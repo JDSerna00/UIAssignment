@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using UnityEngine.UI;
+
 
 
 public class InventoryManager : MonoBehaviour
@@ -13,6 +15,10 @@ public class InventoryManager : MonoBehaviour
     public GameObject inventoryMenu;
     public GameObject itemPanel;
     public GameObject itemPanelGrid;
+    public Button consumablesButton;
+    public Button equippablesButton;
+
+    public Mouse mouse;
 
     private List<ItemPanel> existingPanels = new List<ItemPanel>();
 
@@ -26,8 +32,15 @@ public class InventoryManager : MonoBehaviour
         {
             items.Add(new ItemSlot(null,0));
         }
+        consumablesButton.onClick.AddListener(() => FilterInventory(ItemCategory.Consumable));
+        equippablesButton.onClick.AddListener(() => FilterInventory(ItemCategory.Equippable));
 
         AddItem(new Apple(),3);
+        AddItem(new Sword(), 1);
+        AddItem(new Bow(), 1);
+        AddItem(new HealthScroll(), 3);
+        AddItem(new ManaScroll(), 6);
+        AddItem(new Cheese(), 7);
     }
 
     // Update is called once per frame
@@ -38,10 +51,13 @@ public class InventoryManager : MonoBehaviour
             if (inventoryMenu.activeSelf)
             {
                 inventoryMenu.SetActive(false);
+                mouse.EmptySlot();
+                Cursor.lockState = CursorLockMode.Locked;   
             }
             else
             {
                 inventoryMenu.SetActive(true);
+                Cursor.lockState = CursorLockMode.Confined;
                 RefreshInventory();
             }
         }
@@ -157,6 +173,7 @@ public class InventoryManager : MonoBehaviour
             {
                 currentPanel.itemImage.gameObject.SetActive(true);
                 currentPanel.itemImage.sprite = currentItemSlot.item.GiveItemImage();
+                currentPanel.itemImage.CrossFadeAlpha(1, 0.05f, true);
                 currentPanel.stacksText.gameObject.SetActive(true);
                 currentPanel.stacksText.text = currentItemSlot.stack.ToString();
             }
@@ -168,7 +185,46 @@ public class InventoryManager : MonoBehaviour
         }
 
         Debug.Log("Inventory refresh completed.");
-       
+        mouse.EmptySlot();
      
+    }
+    public void FilterInventory(ItemCategory category)
+    {
+        // Filter the items based on the selected category
+        List<ItemSlot> filteredItems = GetItemsByCategory(category);
+
+        // Clear the current display
+        foreach (ItemPanel panel in existingPanels)
+        {
+            panel.itemImage.gameObject.SetActive(false);
+            panel.stacksText.gameObject.SetActive(false);
+        }
+
+        // Update the display with filtered items
+        for (int index = 0; index < filteredItems.Count; index++)
+        {
+            if (index >= existingPanels.Count)
+            {
+                Debug.LogError("Panel index out of bounds at " + index);
+                break;
+            }
+
+            ItemSlot currentItemSlot = filteredItems[index];
+            ItemPanel currentPanel = existingPanels[index];
+
+            if (currentItemSlot.item != null)
+            {
+                currentPanel.itemImage.gameObject.SetActive(true);
+                currentPanel.itemImage.sprite = currentItemSlot.item.GiveItemImage();
+                currentPanel.stacksText.gameObject.SetActive(true);
+                currentPanel.stacksText.text = currentItemSlot.stack.ToString();
+            }
+        }
+
+        Debug.Log($"Inventory filtered by {category}.");
+    }
+    public List<ItemSlot> GetItemsByCategory(ItemCategory category)
+    {
+        return items.Where(i => i.item != null && i.item.GetCategory() == category).ToList();
     }
 }
